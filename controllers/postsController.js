@@ -15,3 +15,18 @@ exports.posts = (req, res) => {
     })
 
 }
+
+
+exports.add = (req, res) => {
+
+    const sql = "INSERT INTO `checked_posts`(`status`, `comment`, `postId`) VALUES('" + req.body.status + "', '" + req.body.comment + "', '" + req.body.postId + "')"
+    db.query(sql, (error, results) => {
+        if(error) {
+            console.log(error);
+        } else {
+            response.status(results, res);
+        }
+    })
+
+    console.log(req.body);
+}

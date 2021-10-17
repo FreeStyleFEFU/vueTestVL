@@ -6,4 +6,5 @@ module.exports = (app) => {
 
     app.route('/').get(indexController.index)
     app.route('/posts').get(postsController.posts)
+    app.route('/checked_posts/add').post(postsController.add)
 }

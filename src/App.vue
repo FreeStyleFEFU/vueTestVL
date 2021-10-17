@@ -6,7 +6,7 @@
                     <div class="row">
                         <div class="col-12 py-1 d-flex flex-row justify-content-between" style="border-bottom: 1px solid #ebebeb; font-size: 0.9rem">
                             <div>
-                                <a href="#" class="text-decoration-none">{{ post.publishDate }}</a> - {{ post.publishDateString }}
+                                <a href="#" class="text-decoration-none">{{ post.publishDate }}</a> - {{ dateNormalFormat(post.publishDateString) }}
                             </div>
                             <div>
                                 <b-icon-person class="me-2"/>
@@ -20,7 +20,7 @@
                             {{ post.bulletinText }}
                         </div>
                         <div class="col-12 col-md-4 d-flex flex-row justify-content-center flex-md-column justify-content-md-start py-2" style="border-left: 1px solid #ebebeb">
-                            <img v-for="(image, idx) in post.bulletinImagees" :key="idx" :src="image" class="m-1" style="object-fit: contain; max-height: 170px; max-width: 170px" />
+                            <img :src="post.bulletinImagees" class="m-1" style="object-fit: contain; max-height: 170px; max-width: 170px" />
                         </div>
                     </div>
                 </div>
@@ -52,6 +52,7 @@
 <script>
     import 'bootstrap/dist/css/bootstrap.css'
     import 'bootstrap-vue/dist/bootstrap-vue.css'
+    import dateFormat from "dateformat";
     export default {
         name: 'App',
         computed: {
@@ -60,13 +61,26 @@
             }
         },
         methods: {
-            requestPosts() {
+            dateNormalFormat(date) {
+                let d = new Date(date);
+                return dateFormat(d, "fullDate")
+            },
+            async requestPosts() {
+                if( !this.isFetchPosts ) {
+                    let response =  await this.axios.get('http://localhost:3500/posts');
+                    if( response.status === 200) {
+                        this.isFetchPosts = true;
+                        this.posts = response.data.values;
+                    }
+                }
                 this.invalidPosts = this.posts.slice(this.offset, this.offset + 10);
                 this.offset += 10;
-                this.slideToPost(this.invalidPosts[0]);
+                this.focusElementId = this.invalidPosts[0].id;
+                window.scrollTo(0,0);
             },
             slideToPost(post) {
                 this.focusElementId = post.id;
+                console.log(this.$refs[`post-${post.id}`]);
                 let slide = this.$refs[`post-${post.id}`][0];
                 let top = window.scrollY + slide.getBoundingClientRect().y;
                 window.scrollTo(0, top);
@@ -102,13 +116,13 @@
                 }
             },
             keyupEnter() {
-                if( this.invalidPosts.length < 1 ) {
+                if( this.invalidPosts.length < 1) {
                     this.requestPosts();
                 }
             },
             keyupSpace(e) {
                 if( this.invalidPosts.length > 0 ) {
-                    this.$set(this.validPosts, this.focusElementId, {status: 'approve'});
+                    this.$set(this.validPosts, this.focusElementId, {status: 'approve', comment: ''});
                     this.nextPost(e);
                 }
             },
@@ -126,7 +140,7 @@
             },
             keyupSeven() {
                 if( this.areAllPostsChecked ) {
-                    Object.entries(this.validPosts).forEach(([id, value]) => this.postsOnServer.push({ id, ...value }))
+                    Object.entries(this.validPosts).forEach(([id, value]) => {console.log({ ...value, postId: id});this.axios.post('http://localhost:3500/checked_posts/add', {postId: id, ...value})})
                     this.invalidPosts = [];
                     this.validPosts = {};
                     this.requestPosts();
@@ -142,556 +156,35 @@
             window.removeEventListener('keypress', this.keyup);
         },
         data:() => ({
+            isFetchPosts: false,
             offset: 0,
             isShowDialog: false,
             comment: '',
             invalidPosts: [],
             validPosts: {},
             focusElementId: 0,
-            postsOnServer: [],
-            posts: [
-            {
-                id: 1,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 2,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 3,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 4,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 5,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 6,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 7,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 8,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 9,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 10,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 1,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 2,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 3,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 4,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 5,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 6,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 7,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 8,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 9,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 10,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
+            posts: [],
+            menu: [
                 {
-                id: 1,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 2,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 3,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 4,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 5,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 6,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 7,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 8,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 9,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 10,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
+                    'title': 'Одобрить',
+                    'color':'darkseagreen',
+                    'action': 'Пробел',
+                },
                 {
-                id: 1,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 2,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 3,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 4,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 5,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 6,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 7,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 8,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-            {
-                id: 9,
-                publishDate: 1234567,
-                publishDateString: '08:46, сегодня',
-                ownerId: 14567,
-                ownerLogin: 'MyOwner',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                    'https://bugaga.ru/uploads/posts/2017-03/1489052030_kotik-hosiko-12.jpg',
-                ]
-            },
-            {
-                id: 10,
-                publishDate: 1234567,
-                publishDateString: '05:46, сегодня',
-                ownerId: 12345,
-                ownerLogin: 'MyOwner1',
-                bulletinSubject: 'Lorem ipsum dolor sit amet',
-                bulletinText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum',
-                bulletinImagees: [
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                    'https://avatars.mds.yandex.net/get-zen_doc/5335957/pub_60dc436f319aa60d5ad08eee_60dc43f96eb2773558d067e5/scale_1200',
-                ]
-            },
-        ],
-          menu: [
-            {
-                'title': 'Одобрить',
-                'color':'darkseagreen',
-                'action': 'Пробел',
-            },
-            {
-                'title': 'Отклонить',
-                'color': 'orange',
-                'action': 'Del',
-            },
-            {
-                'title': 'Эскалация',
-                'color': 'blue',
-                'action': 'Shift+Enter',
-            },
-            {
-                'title': 'Сохранить',
-                'action': '7',
-            },
-        ]
+                    'title': 'Отклонить',
+                    'color': 'orange',
+                    'action': 'Del',
+                },
+                {
+                    'title': 'Эскалация',
+                    'color': 'blue',
+                    'action': 'Shift+Enter',
+                },
+                {
+                    'title': 'Сохранить',
+                    'action': '7',
+                },
+            ]
         })
     }
 </script>
