@@ -112,7 +112,7 @@
                 console.log(e);
                 if( e.key === 'Enter' && e.shiftKey) this.keyupShiftEnter();
                 else if( e.key === 'Enter' ) this.keyupEnter();
-                else if( e.key === 'd' ) this.keyupDel();
+                else if( e.key.toUpperCase() === 'D' ) this.keyupDel();
                 else if( e.key === '7' ) this.keyupSeven();
                 else if( e.key === ' ' ) {
                     this.keyupSpace(e);
@@ -176,7 +176,7 @@
                 {
                     'title': 'Отклонить',
                     'color': 'orange',
-                    'action': 'Del',
+                    'action': 'D',
                 },
                 {
                     'title': 'Эскалация',
