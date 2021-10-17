@@ -20,7 +20,10 @@
                             {{ post.bulletinText }}
                         </div>
                         <div class="col-12 col-md-4 d-flex flex-row justify-content-center flex-md-column justify-content-md-start py-2" style="border-left: 1px solid #ebebeb">
-                            <img :src="post.bulletinImagees" class="m-1" style="object-fit: contain; max-height: 170px; max-width: 170px" />
+                            <img v-if="typeof post.bulletinImagees === 'string'" :src="post.bulletinImagees" class="m-1" style="object-fit: contain; max-height: 170px; max-width: 170px" />
+                            <div v-else>
+                                <img v-for="(image, idx) in post.bulletinImagees" :key="idx" :src="image" class="m-1" style="object-fit: contain; max-height: 170px; max-width: 170px" />
+                            </div>
                         </div>
                     </div>
                 </div>
