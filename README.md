@@ -1,5 +1,7 @@
 # testvl1
 
+## testvl - directory with database files
+
 ## Project setup
 ```
 npm install
@@ -18,6 +20,11 @@ npm run build
 ### Lints and fixes files
 ```
 npm run lint
+```
+
+### Run API server
+```
+nodemon server.js
 ```
 
 ### Customize configuration
