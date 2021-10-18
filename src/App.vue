@@ -69,17 +69,14 @@
                 return dateFormat(d, "fullDate")
             },
             async requestPosts() {
-                if( !this.isFetchPosts ) {
-                    let response =  await this.axios.get('http://localhost:3500/posts');
-                    if( response.status === 200) {
-                        this.isFetchPosts = true;
-                        this.posts = response.data.values;
-                    }
+                let response =  await this.axios.get(`http://localhost:3500/posts?offset=${this.offset}&limit=10`);
+                if( response.status === 200) {
+                    this.invalidPosts = response.data.values;
+                    this.offset += 10;
+                    this.focusElementId = this.invalidPosts[0].id;
+                    window.scrollTo(0,0);
                 }
-                this.invalidPosts = this.posts.slice(this.offset, this.offset + 10);
-                this.offset += 10;
-                this.focusElementId = this.invalidPosts[0].id;
-                window.scrollTo(0,0);
+
             },
             slideToPost(post) {
                 this.focusElementId = post.id;
@@ -159,14 +156,12 @@
             window.removeEventListener('keypress', this.keyup);
         },
         data:() => ({
-            isFetchPosts: false,
             offset: 0,
             isShowDialog: false,
             comment: '',
             invalidPosts: [],
             validPosts: {},
             focusElementId: 0,
-            posts: [],
             menu: [
                 {
                     'title': 'Одобрить',
