@@ -37,7 +37,7 @@
                 </div>
             </div>
         </div>
-        <div ref="lastElement" class="text-center" style="height: 960px">
+        <div ref="lastElement" class="text-center" style="height: 100vh">
             <h2 v-if="areAllPostsChecked"> Нажмите на 7 для отправки решений на сервер<span v-if="invalidPosts.length === 10">&nbsp; и загрузки новых постов</span> </h2>
         </div>
         <b-modal hide-footer hide-header ref="exampleModal">
