@@ -19,7 +19,9 @@ exports.posts = (req, res) => {
 
 exports.add = (req, res) => {
 
-    const sql = "INSERT INTO `checked_posts`(`status`, `comment`, `postId`) VALUES('" + req.body.status + "', '" + req.body.comment + "', '" + req.body.postId + "')"
+    let values = req.body.reduce((acc, value, idx) => acc + `('${ value.status }', '${ value.comment }', '${ value.postId }')${ idx === req.body.length - 1 ? '' : ', '}`, '')
+
+    const sql = "INSERT INTO `checked_posts`(`status`, `comment`, `postId`) VALUES" + values
     db.query(sql, (error, results) => {
         if(error) {
             console.log(error);
@@ -27,6 +29,4 @@ exports.add = (req, res) => {
             response.status(results, res);
         }
     })
-
-    console.log(req.body);
 }

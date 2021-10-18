@@ -140,7 +140,8 @@
             },
             keyupSeven() {
                 if( this.areAllPostsChecked ) {
-                    Object.entries(this.validPosts).forEach(([id, value]) => {console.log({ ...value, postId: id});this.axios.post('http://localhost:3500/checked_posts/add', {postId: id, ...value})})
+                    this.axios.post('http://localhost:3500/checked_posts/add', Object.entries(this.validPosts).map(([id, data]) => ({ postId: id, ...data })));
+                    // Object.entries(this.validPosts).forEach(([id, value]) => this.axios.post('http://localhost:3500/checked_posts/add', {postId: id, ...value}));
                     this.invalidPosts = [];
                     this.validPosts = {};
                     this.requestPosts();
